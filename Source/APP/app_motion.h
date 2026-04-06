@@ -58,6 +58,7 @@ typedef enum _car_type
     CAR_FOURWHEEL = 0x04,       // 四轮普通小车 X1
     CAR_ACKERMAN = 0x05,        // 阿克曼小车   R2
     CAR_SUNRISE = 0x06,         // 旭日派小车
+    CAR_OMNI = 0x07,            // OMNI 三轮等边三角形小车
 
     CAR_TYPE_MAX                // 最后一个小车类型，仅作为判断
 } car_type_t;
