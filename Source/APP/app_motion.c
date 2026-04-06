@@ -5,6 +5,7 @@
 #include "app_mecanum.h"
 #include "app_ackerman.h"
 #include "app_fourwheel.h"
+#include "app_omni.h"
 #include "app_flash.h"
 
 #include "bsp_motor.h"
@@ -49,6 +50,9 @@ static float Motion_Get_Circle_Pulse(void)
         break;
     case CAR_SUNRISE:
         temp = ENCODER_CIRCLE_450;
+        break;
+    case CAR_OMNI:
+        temp = ENCODER_CIRCLE_330;
         break;
     default:
         temp = ENCODER_CIRCLE_330;
@@ -194,6 +198,11 @@ void Motion_Yaw_Calc(float yaw)
         Fourwheel_Yaw_Calc(yaw);
         break;
     }
+    case CAR_OMNI:
+    {
+        Omni_Yaw_Calc(yaw);
+        break;
+    }
     // case CAR_ACKERMAN:
     // {
     //     Ackerman_Yaw_Calc(yaw);
@@ -247,6 +256,14 @@ void Motion_Get_Speed(car_data_t* car)
         car->Vx = (speed_mm[0] + speed_mm[1] + speed_mm[2] + speed_mm[3]) / 4;
         car->Vy = 0;
         car->Vz = -(speed_mm[0] + speed_mm[1] - speed_mm[2] - speed_mm[3]) / 4.0f / robot_APB * 1000;
+        break;
+    }
+    case CAR_OMNI:
+    {
+        // 三轮等边三角形运动学逆解
+        car->Vx = (int16_t)(speed_mm[2] - (speed_mm[0] + speed_mm[1]) / 2.0f);
+        car->Vy = (int16_t)((speed_mm[0] - speed_mm[1]) / 1.732f);
+        car->Vz = (int16_t)((speed_mm[0] + speed_mm[1] + speed_mm[2]) / (3.0f * robot_APB) * 1000);
         break;
     }
     case CAR_ACKERMAN:
@@ -308,6 +325,7 @@ float Motion_Get_APB(void)
     if (g_car_type == CAR_MECANUM_MINI) return MECANUM_MINI_APB;
     if (g_car_type == CAR_ACKERMAN) return AKM_WIDTH;
     if (g_car_type == CAR_FOURWHEEL) return FOURWHEEL_APB;
+    if (g_car_type == CAR_OMNI) return OMNI_APB;
     if (g_car_type == CAR_SUNRISE) return MECANUM_SUNRISE_APB;
     return MECANUM_APB;
 }
@@ -320,6 +338,7 @@ float Motion_Get_Circle_MM(void)
     if (g_car_type == CAR_MECANUM_MINI) return MECANUM_MINI_CIRCLE_MM;
     if (g_car_type == CAR_ACKERMAN) return AKM_CIRCLE_MM;
     if (g_car_type == CAR_FOURWHEEL) return FOURWHEEL_CIRCLE_MM;
+    if (g_car_type == CAR_OMNI) return OMNI_CIRCLE_MM;
     if (g_car_type == CAR_SUNRISE) return MECANUM_CIRCLE_MM;
     return MECANUM_CIRCLE_MM;
 }
@@ -357,7 +376,7 @@ void Motion_Get_Encoder(void)
         g_Encoder_All_Offset[i] = g_Encoder_All_Now[i] - g_Encoder_All_Last[i];
 	    // 记录上次编码器数据
 	    g_Encoder_All_Last[i] = g_Encoder_All_Now[i];
-    
+     
     #if ENABLE_REAL_WHEEL
         // 计算每分钟转多少圈，10毫秒测到的脉冲数*100变秒*60变分钟/每一圈的脉冲数
         real_circle[i] = g_Encoder_All_Offset[i] * 60 * 100 / Motion_Get_Circle_Pulse();
@@ -393,6 +412,11 @@ void Motion_Ctrl(int16_t V_x, int16_t V_y, int16_t V_z, uint8_t adjust)
     case CAR_FOURWHEEL:
     {
         Fourwheel_Ctrl(V_x, V_y, V_z, adjust);
+        break;
+    }
+    case CAR_OMNI:
+    {
+        Omni_Ctrl(V_x, V_y, V_z, adjust);
         break;
     }
     case CAR_ACKERMAN:
@@ -431,6 +455,11 @@ void Motion_Ctrl_State(uint8_t state, uint16_t speed, uint8_t adjust)
     case CAR_FOURWHEEL:
     {
         Fourwheel_State(state, input_speed, adjust);
+        break;
+    }
+    case CAR_OMNI:
+    {
+        Omni_State(state, input_speed, adjust);
         break;
     }
     case CAR_ACKERMAN:
